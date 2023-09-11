@@ -352,17 +352,18 @@ Disassembly of section .text:
  8000502:	bf00      	nop
 
 08000504 <setState>:
-	led3 	//blue
 };
 
 void setState(enum state);
 
+// function setState will set LEDs to desired states
 void setState(enum state State){
  8000504:	b580      	push	{r7, lr}
  8000506:	b082      	sub	sp, #8
  8000508:	af00      	add	r7, sp, #0
  800050a:	4603      	mov	r3, r0
  800050c:	71fb      	strb	r3, [r7, #7]
+
 	switch(State){
  800050e:	79fb      	ldrb	r3, [r7, #7]
  8000510:	2b02      	cmp	r3, #2
@@ -440,6 +441,7 @@ void setState(enum state State){
 
 08000594 <main>:
 
+
 static enum state State = led1;
 
 int main(void)
@@ -489,7 +491,6 @@ int main(void)
  80005d6:	2201      	movs	r2, #1
  80005d8:	701a      	strb	r2, [r3, #0]
  80005da:	e7e7      	b.n	80005ac <main+0x18>
-
 	      } else if (State == led2) {
  80005dc:	4b0d      	ldr	r3, [pc, #52]	; (8000614 <main+0x80>)
  80005de:	781b      	ldrb	r3, [r3, #0]
@@ -505,7 +506,6 @@ int main(void)
  80005f0:	2202      	movs	r2, #2
  80005f2:	701a      	strb	r2, [r3, #0]
  80005f4:	e7da      	b.n	80005ac <main+0x18>
-
 	      } else if (State == led3) {
  80005f6:	4b07      	ldr	r3, [pc, #28]	; (8000614 <main+0x80>)
  80005f8:	781b      	ldrb	r3, [r3, #0]
@@ -526,9 +526,9 @@ int main(void)
  8000614:	200005b8 	.word	0x200005b8
 
 08000618 <SystemClock_Config>:
+  }
 
-
-
+}
 
 void SystemClock_Config(void)
 {
@@ -613,8 +613,7 @@ void SystemClock_Config(void)
  80006a8:	f000 f94c 	bl	8000944 <Error_Handler>
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
+
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
  80006ac:	230f      	movs	r3, #15
  80006ae:	60fb      	str	r3, [r7, #12]
