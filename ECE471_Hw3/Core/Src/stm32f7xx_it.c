@@ -57,7 +57,10 @@
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN EV */
-volatile int extiFlag;
+//volatile int extiFlag;
+volatile int fastCounter = 0;
+volatile int slowCounter =0;
+volatile int btnFlag =0;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -204,7 +207,8 @@ void SysTick_Handler(void)
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
-
+  	fastCounter++;
+  	slowCounter++;
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
@@ -217,13 +221,18 @@ void TIM2_IRQHandler(void)
   */
 void EXTI15_10_IRQHandler(void)
 {
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
 
+  /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(USER_Btn_Pin);
 
-  //set the interrupt flag
-  extiFlag = 1;
 
 
+   //set the interrupt flag
+   btnFlag = 1;
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
+
+  /* USER CODE END EXTI15_10_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

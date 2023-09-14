@@ -25,8 +25,6 @@
  extern "C" {
 #endif
 
-extern volatile int extiFlag;
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 

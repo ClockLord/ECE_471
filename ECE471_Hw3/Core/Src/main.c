@@ -1,6 +1,45 @@
-
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : Main program body
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2023 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+
+/* USER CODE END Includes */
+
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
 
 TIM_HandleTypeDef htim2;
 
@@ -8,54 +47,114 @@ UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
+/* USER CODE BEGIN PV */
 
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM2_Init(void);
+/* USER CODE BEGIN PFP */
 
+/* USER CODE END PFP */
 
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
 
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
+  /* USER CODE BEGIN 1 */
 
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
   SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_TIM2_Init();
+  /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Init(&htim2);
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
+
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if (extiFlag == 1) {
-	              // Perform the desired action when the EXTI interrupt occurs
-	              HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-	              HAL_Delay(2000);
-	              HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-	              HAL_Delay(1000);
+    /* USER CODE END WHILE */
 
-	              // Reset the flag
-	              extiFlag = 0;
-	          }
+	if (fastCounter == 1){
+		  if (btnFlag == 1) {
+		  		              // Perform the desired action when the EXTI interrupt occurs
+		  		              HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+
+		  		              // Reset the flag
+		  		              btnFlag = 0;
+		  		          }
+	      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+	      fastCounter = 0;
+	  }
+
+	  else if (slowCounter ==2){
+
+		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+		  slowCounter =0;
+	  }
+    /* USER CODE BEGIN 3 */
   }
-
+  /* USER CODE END 3 */
 }
 
-
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-
+  /** Configure LSE Drive Capability
+  */
   HAL_PWR_EnableBkUpAccess();
 
+  /** Configure the main internal regulator output voltage
+  */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
-
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -96,6 +195,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_SlaveConfigTypeDef sSlaveConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
@@ -104,16 +204,21 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = 30;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4294967295;
+  htim2.Init.Period = 999999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
-  if (HAL_TIM_OC_Init(&htim2) != HAL_OK)
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -129,11 +234,11 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_TIMING;
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_OC_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -309,6 +414,7 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+
   }
   /* USER CODE END Error_Handler_Debug */
 }

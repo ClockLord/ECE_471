@@ -24,7 +24,9 @@
 #ifdef __cplusplus
  extern "C" {
 #endif
-
+extern volatile int fastCounter;
+extern volatile int slowCounter;
+extern volatile int btnFlag;
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal_conf.h"
 
