@@ -110,6 +110,7 @@ void slowBlink(enum status status){
   */
 static int loopCount =0;
 static enum status status= expired;
+#define LONG_PRESS_THRESHOLD 3
 
 int main(void)
 {
@@ -130,49 +131,64 @@ int main(void)
   /* USER CODE END 2 */
 
 
-int btnDuration =0;
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-while (1)
-  {
-	HAL_SuspendTick();
-	HAL_PWR_EnterSLEEPMode(PWR_LOWPOWERREGULATOR_ON,PWR_SLEEPENTRY_WFI);
-	HAL_ResumeTick();
 
-	GPIO_PinState buttonState = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
-
-	if(btnFlag==1){
-		loopCount=0;
-		HAL_Delay(10);
-
-		if(buttonState == GPIO_PIN_SET){
-			HAL_Delay(10);
-			loopCount++;
-
-			if(loopCount>=5){	//long Blink
-				for(int i=0;i<5;i++){
-					slowBlink(status);
-				}
-
-			}
-			else {
-				for (int i=0;i<5;i++){
-					quickBlink(status);
-				}
+      	  int buttonPressed = 0;
+          int pressDuration = 0;
+          int blinkCount = 0;
 
 
-			}
-		}
+          while (1)
+              {
+                  HAL_SuspendTick();
+                  HAL_PWR_EnterSLEEPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+                  HAL_ResumeTick();
 
+                  GPIO_PinState buttonState = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
 
+                  if (btnFlag == 1)
+                  {
+                      if (buttonState == GPIO_PIN_SET)
+                      {
+                          if (!buttonPressed)
+                          {
+                              buttonPressed = 1;
+                              pressDuration = 0;
+                          }
 
-		//loopCount=0;
-	}
+                          // Increment the pressDuration while the button is pressed
+                          pressDuration++;
 
+                          // Check for a long press
+                          if (pressDuration >= LONG_PRESS_THRESHOLD)
+                          {
+                              for (int i = 0; i < 5; i++)
+                              {
+                                  slowBlink(status);
+                              }
 
-  }
+                              // Reset pressDuration to allow for short presses
+                              pressDuration = 0;
+                          }
+                      }
+                      else
+                      {
+                          // Button is released
+                          buttonPressed = 0;
 
+                          // Check for a short press
+                          if (pressDuration < LONG_PRESS_THRESHOLD && pressDuration > 0)
+                          {
+                              for (int i = 0; i < 5; i++)
+                              {
+                                  quickBlink(status);
+                              }
+                          }
 
+                          // Reset pressDuration when the button is released
+                          pressDuration = 0;
+                      }
+                  }
+              }
 }
 
 /**
