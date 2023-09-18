@@ -105,33 +105,31 @@ int main(void)
 
 
   /* USER CODE END 2 */
-
+//static int threshold =3;
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+while (1)
   {
     /* USER CODE END WHILE */
+	if (btnFlag == 1){
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+		btnFlag = 0;
+	}
+
 
 	if (fastCounter == 1){
-		  if (btnFlag == 1) {
-		  		              // Perform the desired action when the EXTI interrupt occurs
-		  		              HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
-
-		  		              // Reset the flag
-		  		              btnFlag = 0;
-		  		          }
 	      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
 	      fastCounter = 0;
 	  }
-
-	  else if (slowCounter ==2){
-
-		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+    if (slowCounter ==2){
+		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
 		  slowCounter =0;
 	  }
     /* USER CODE BEGIN 3 */
+
   }
-  /* USER CODE END 3 */
+
+
 }
 
 /**
@@ -204,7 +202,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 30;
+  htim2.Init.Prescaler = 71;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 999999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

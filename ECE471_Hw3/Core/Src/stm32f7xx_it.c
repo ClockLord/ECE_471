@@ -60,7 +60,9 @@ extern TIM_HandleTypeDef htim2;
 //volatile int extiFlag;
 volatile int fastCounter = 0;
 volatile int slowCounter =0;
+volatile int btnTimer=0;
 volatile int btnFlag =0;
+volatile int buttonState=0;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -206,9 +208,17 @@ void SysTick_Handler(void)
   */
 void TIM2_IRQHandler(void)
 {
+
+		btnTimer++;
+
   /* USER CODE BEGIN TIM2_IRQn 0 */
-  	fastCounter++;
-  	slowCounter++;
+
+		fastCounter++;
+		slowCounter++;
+
+
+
+
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */

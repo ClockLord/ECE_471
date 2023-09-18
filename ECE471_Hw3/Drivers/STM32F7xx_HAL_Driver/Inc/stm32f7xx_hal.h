@@ -27,6 +27,8 @@
 extern volatile int fastCounter;
 extern volatile int slowCounter;
 extern volatile int btnFlag;
+extern volatile int btnTimer;
+extern volatile int buttonState;
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal_conf.h"
 
