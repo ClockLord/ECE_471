@@ -208,8 +208,10 @@ void SysTick_Handler(void)
   */
 void TIM2_IRQHandler(void)
 {
-
+	if(btnTimer>0){
 		btnTimer++;
+
+	}
 
   /* USER CODE BEGIN TIM2_IRQn 0 */
 
@@ -233,13 +235,14 @@ void EXTI15_10_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI15_10_IRQn 0 */
 
+	 btnFlag = 1;
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(USER_Btn_Pin);
 
 
 
    //set the interrupt flag
-   btnFlag = 1;
+
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
   /* USER CODE END EXTI15_10_IRQn 1 */

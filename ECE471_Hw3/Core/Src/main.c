@@ -58,9 +58,47 @@ static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
+enum status {
+	  unexpired,
+	  expired
+  };
 
+void quickBlink(enum status status);
+void slowBlink(enum status status);
 /* USER CODE END PFP */
 
+
+
+
+void quickBlink(enum status status){
+	if (status == unexpired){	//unexpired
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //green
+		HAL_Delay(100);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET); //green
+		HAL_Delay(100);
+	}
+	else{	//expired
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); //red
+		HAL_Delay(100);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET); //red
+		HAL_Delay(100);
+	}
+}
+
+void slowBlink(enum status status){
+	if (status == unexpired){	//unexpired
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //green
+			HAL_Delay(250);
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET); //green
+			HAL_Delay(250);
+		}
+		else{	//expired
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); //red
+			HAL_Delay(250);
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET); //red
+			HAL_Delay(250);
+		}
+}
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
@@ -70,29 +108,14 @@ static void MX_TIM2_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
+static int loopCount =0;
+static enum status status= expired;
+
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
@@ -105,27 +128,47 @@ int main(void)
 
 
   /* USER CODE END 2 */
-//static int threshold =3;
+
+
+int btnDuration =0;
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 while (1)
   {
-    /* USER CODE END WHILE */
-	if (btnFlag == 1){
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
-		btnFlag = 0;
+	HAL_SuspendTick();
+	HAL_PWR_EnterSLEEPMode(PWR_LOWPOWERREGULATOR_ON,PWR_SLEEPENTRY_WFI);
+	HAL_ResumeTick();
+
+	GPIO_PinState buttonState = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+
+	if(btnFlag==1){
+		loopCount=0;
+		HAL_Delay(10);
+
+		if(buttonState == GPIO_PIN_SET){
+			HAL_Delay(10);
+			loopCount++;
+
+			if(loopCount>=5){	//long Blink
+				for(int i=0;i<5;i++){
+					slowBlink(status);
+				}
+
+			}
+			else {
+				for (int i=0;i<5;i++){
+					quickBlink(status);
+				}
+
+
+			}
+		}
+
+
+
+		//loopCount=0;
 	}
 
-
-	if (fastCounter == 1){
-	      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
-	      fastCounter = 0;
-	  }
-    if (slowCounter ==2){
-		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
-		  slowCounter =0;
-	  }
-    /* USER CODE BEGIN 3 */
 
   }
 
