@@ -144,6 +144,8 @@ int main(void)
 
                   GPIO_PinState buttonState = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
 
+
+
                   if (btnFlag == 1)
                   {
                       if (buttonState == GPIO_PIN_SET)
@@ -189,10 +191,11 @@ int main(void)
                           pressDuration = 0;
                       }
                   }
-                  if(filterCount==10){
+                  if(filterCount==10 || btnTimer>=180){	//20 seconds for demo purposes
                 	  status = expired;
                 	  filterCount=0;
                   }
+
               }
 }
 

@@ -208,15 +208,16 @@ void SysTick_Handler(void)
   */
 void TIM2_IRQHandler(void)
 {
-	if(btnTimer>0){
+
 		btnTimer++;
 
-	}
+
+
+
 
   /* USER CODE BEGIN TIM2_IRQn 0 */
 
-		fastCounter++;
-		slowCounter++;
+
 
 
 
