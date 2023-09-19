@@ -109,7 +109,7 @@ void slowBlink(enum status status){
   * @retval int
   */
 static int loopCount =0;
-static enum status status= expired;
+static enum status status= unexpired;
 #define LONG_PRESS_THRESHOLD 3
 
 int main(void)
@@ -134,8 +134,7 @@ int main(void)
 
       	  int buttonPressed = 0;
           int pressDuration = 0;
-          int blinkCount = 0;
-
+          int filterCount =0;
 
           while (1)
               {
@@ -161,6 +160,7 @@ int main(void)
                           // Check for a long press
                           if (pressDuration >= LONG_PRESS_THRESHOLD)
                           {
+                        	  status=unexpired;
                               for (int i = 0; i < 5; i++)
                               {
                                   slowBlink(status);
@@ -178,6 +178,7 @@ int main(void)
                           // Check for a short press
                           if (pressDuration < LONG_PRESS_THRESHOLD && pressDuration > 0)
                           {
+                        	  filterCount++;
                               for (int i = 0; i < 5; i++)
                               {
                                   quickBlink(status);
@@ -187,6 +188,10 @@ int main(void)
                           // Reset pressDuration when the button is released
                           pressDuration = 0;
                       }
+                  }
+                  if(filterCount==10){
+                	  status = expired;
+                	  filterCount=0;
                   }
               }
 }
