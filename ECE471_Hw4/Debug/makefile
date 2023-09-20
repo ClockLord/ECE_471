@@ -61,7 +61,7 @@ main-build: ECE471_Hw4.elf secondary-outputs
 
 # Tool invocations
 ECE471_Hw4.elf ECE471_Hw4.map: $(OBJS) $(USER_OBJS) C:\Users\sucit\OneDrive\Documents\Repositories\ECE_471\ECE471_Hw4\STM32F746ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "ECE471_Hw4.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\sucit\OneDrive\Documents\Repositories\ECE_471\ECE471_Hw4\STM32F746ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ECE471_Hw4.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "ECE471_Hw4.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\sucit\OneDrive\Documents\Repositories\ECE_471\ECE471_Hw4\STM32F746ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ECE471_Hw4.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
