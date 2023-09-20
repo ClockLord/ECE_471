@@ -129,6 +129,7 @@ int main(void)
 
 	  // Convert the raw ADC value to voltage (assuming VREF = 3.0V)
 	  float voltage = (float)raw *3/4095; // 12-bit ADC with VREF = 3.0V
+	  TIM4->CCR2 = voltage;
 
 	  // Print the voltage value
 	  char msg[50];
@@ -138,12 +139,7 @@ int main(void)
 	  HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 
 	  // Delay for a brief moment (1 ms in this case)
-	  HAL_Delay(1);
-	  for (uint32_t coef=0; coef<99; coef++ )
-	  	      {
-	  	        TIM4->CCR2 = coef;
-	  	        HAL_Delay(20);
-	  	      }
+
   }
   /* USER CODE END 3 */
 }
