@@ -137,6 +137,7 @@ int main(void)
 
 	  //sprintf(transmit, Voltage: %.2f V\r\n", voltage);
 	  HAL_UART_Transmit(&huart2, (uint8_t*)&transmit, 1, 10);
+
 	  HAL_StatusTypeDef status = HAL_UART_Receive(&huart2, (uint8_t*)&transmit, 1, 10); // Non-blocking receive with a 100ms timeout
 
 	  // Delay for a brief moment (1 ms in this case)
@@ -162,6 +163,9 @@ int main(void)
 		  }
 		  else{
 			  TIM4->CCR2 = 0;
+			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+			  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+
 		  }
 	  }
 
