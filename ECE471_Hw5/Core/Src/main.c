@@ -20,6 +20,7 @@
 #include "main.h"
 #include "string.h"
 #include "cmsis_os.h"
+#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -73,6 +74,8 @@ osThreadId buttonHandle;
 osThreadId lightHandle;
 osThreadId analogHandle;
 osThreadId controlHandle;
+osMessageQId SwitchHandle;
+osMessageQId ThrottleHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -89,6 +92,8 @@ void button_init(void const * argument);
 void light_init(void const * argument);
 void analog_init(void const * argument);
 void control_init(void const * argument);
+
+
 
 /* USER CODE BEGIN PFP */
 
@@ -124,6 +129,7 @@ int main(void)
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
+
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_ETH_Init();
@@ -144,6 +150,15 @@ int main(void)
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
+
+  /* Create the queue(s) */
+  /* definition and creation of Switch */
+  osMessageQDef(Switch, 5, uint8_t);
+  SwitchHandle = osMessageCreate(osMessageQ(Switch), NULL);
+
+  /* definition and creation of Throttle */
+  osMessageQDef(Throttle, 5, uint16_t);
+  ThrottleHandle = osMessageCreate(osMessageQ(Throttle), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -468,13 +483,23 @@ void alive_init(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_button_init */
+
+static bool Toggle = false;
 void button_init(void const * argument)
 {
   /* USER CODE BEGIN button_init */
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET){
+		Toggle = true;
+
+	}
+	else{
+		Toggle = false;
+	}
+	osStatus status = osMessagePut(SwitchHandle, Toggle, osWaitForever);
+    osDelay(10);
   }
   /* USER CODE END button_init */
 }
@@ -492,6 +517,18 @@ void light_init(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	osEvent messageEvent = osMessageGet(SwitchHandle, osWaitForever);
+	Toggle = (bool)messageEvent.value.p;
+
+	if(Toggle){
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //green
+
+	}
+	else{
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET); //green
+
+	}
+
     osDelay(1);
   }
   /* USER CODE END light_init */
