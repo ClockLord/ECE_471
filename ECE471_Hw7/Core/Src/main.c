@@ -96,70 +96,82 @@ static const char* morseCode[] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.
 
 //function takes in morse code and decodes it back into ASCII
 char* decodeMorse(char* morseMessage){
+	 // Initialize variables for Morse code interpretation
+	    char* decodedMessage = malloc(strlen(morseMessage) + 1);
+	    int decodedIndex = 0;
 
-	 int length = strlen(morseMessage);
-	    char* decodedMessage = malloc((length / 4) + 1); // Maximum size for Morse to ASCII
+	    int morseCharacterLength = 0;
+	    char morseCharacter[10];  // Maximum length for a Morse character
 
-	    if (decodedMessage == NULL) {
-	        return NULL; // Memory allocation error
-	    }
+	    for (int i = 0; morseMessage[i] != '\0'; i++) {
+	        char symbol = morseMessage[i];
 
-	    char* token = strtok(morseMessage, " "); // Tokenize the input by space
-	    int index = 0;
-
-	    while (token != NULL) {
-	        int i;
-	        for (i = 0; i < 36; i++) {
-	            if (strcmp(token, morseCode[i]) == 0) {
-	                if (i < 26) {
-	                    decodedMessage[index] = 'A' + i; // Convert to uppercase letter
-	                } else if (i < 36) {
-	                    decodedMessage[index] = '0' + (i - 26); // Convert to digit
+	        if (symbol == '.') {
+	            morseCharacter[morseCharacterLength++] = '.';
+	        } else if (symbol == '-') {
+	            morseCharacter[morseCharacterLength++] = '-';
+	        } else if (symbol == ' ') {
+	            if (morseCharacterLength > 0) {
+	                // End of a Morse character, find the corresponding character
+	                morseCharacter[morseCharacterLength] = '\0';
+	                int matchFound = 0;
+	                for (int j = 0; j < 36; j++) {  // 26 letters, 10 digits
+	                    if (strcmp(morseCharacter, morseCode[j]) == 0) {
+	                        decodedMessage[decodedIndex++] = (j < 26) ? ('A' + j) : ('0' + j - 26);
+	                        matchFound = 1;
+	                        break;
+	                    }
 	                }
-	                index++;
-	                break;
+
+	                if (!matchFound) {
+	                    // Handle unknown Morse character
+	                    decodedMessage[decodedIndex++] = '?';
+	                }
+
+	                morseCharacterLength = 0;
+	            } else {
+	                // Space represents the gap between words
+	                decodedMessage[decodedIndex++] = ' ';
 	            }
 	        }
-	        token = strtok(NULL, " "); // Get the next token
 	    }
 
-	    decodedMessage[index] = '\0'; // Null-terminate the string
+	    decodedMessage[decodedIndex] = '\0';  // Null-terminate the decoded message
 	    return decodedMessage;
-
 }
 
 //function takes in ASCII and codes it into morse code
 char* codeMorse(char* asciiMessage) {
-    int length = strlen(asciiMessage);
-    char* morseMessage = malloc((length * 5) + 1); // Maximum size for ASCII to Morse
+	 int length = strlen(asciiMessage);
+	    char* morseMessage = malloc((length * 5) + 1); // Maximum size for ASCII to Morse
 
-    if (morseMessage == NULL) {
-        return NULL; // Memory allocation error
-    }
+	    if (morseMessage == NULL) {
+	        return NULL; // Memory allocation error
+	    }
 
-    int index = 0;
+	    int index = 0;
 
-    for (int i = 0; i < length; i++) {
-        char c = toupper(asciiMessage[i]);
+	    for (int i = 0; i < length; i++) {
+	        char c = toupper(asciiMessage[i]);
 
-        if (isalpha(c)) {
-            int morseIndex = c - 'A';
-            strcpy(&morseMessage[index], morseCode[morseIndex]);
-            index += strlen(morseCode[morseIndex]);
-        } else if (isdigit(c)) {
-            int morseIndex = c - '0' + 26; // Offset for digits
-            strcpy(&morseMessage[index], morseCode[morseIndex]);
-            index += strlen(morseCode[morseIndex]);
-        } else if (c == ' ') {
-            morseMessage[index++] = ' '; // Space character
-        }
-        if (i < length - 1) {
-            morseMessage[index++] = ' '; // Inter-element gap
-        }
-    }
+	        if (isalpha(c)) {
+	            int morseIndex = c - 'A';
+	            strcpy(&morseMessage[index], morseCode[morseIndex]);
+	            index += strlen(morseCode[morseIndex]);
+	        } else if (isdigit(c)) {
+	            int morseIndex = c - '0' + 26; // Offset for digits
+	            strcpy(&morseMessage[index], morseCode[morseIndex]);
+	            index += strlen(morseCode[morseIndex]);
+	        } else if (c == ' ') {
+	            morseMessage[index++] = ' '; // Space character
+	        }
+	        if (i < length - 1) {
+	            morseMessage[index++] = ' '; // Inter-element gap
+	        }
+	    }
 
-    morseMessage[index] = '\0'; // Null-terminate the string
-    return morseMessage;
+	    morseMessage[index] = '\0'; // Null-terminate the string
+	    return morseMessage;
 }
 
 void UART3_Print(const char* str) {
@@ -169,22 +181,28 @@ void UART3_Print(const char* str) {
 //function blinks an led in morse code
 void morseCodeBlink(char* morseCode){
 
+	int dotCount =0;
+
 	 for (int i = 0; morseCode[i] != '\0'; i++) {
 	        char symbol = morseCode[i];
 
-	        if (symbol == '.') {
-	        	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);  // Turn the LED on (replace with your LED control function)
-	            HAL_Delay(100);  // LED on time (adjust as needed)
-	            HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);  // Turn the LED off
-	            HAL_Delay(100);  // Gap between dots (adjust as needed)
+	        if (symbol == ' ') {
+	        	 HAL_Delay(600);  // Adjust as needed fo
+
 	        } else if (symbol == '-') {
 	        	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);  // Turn the LED on (replace with your LED control function)
-	        	HAL_Delay(200);  // LED on time (adjust as needed)
+	        	HAL_Delay(300);  // LED on time (adjust as needed)
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);  // Turn the LED off
-				HAL_Delay(200);  // Gap between dots (adjust as needed)
-	        } else if (symbol == ' ') {
-	            // Gap between words
-	            HAL_Delay(600);  // Adjust as needed for word gapHAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+				HAL_Delay(100);  // Gap between dots (adjust as needed)
+	        } else if (symbol == '.') {
+	        	dotCount ++;
+	        }	//for some reason quick blinks happen to often this fixes it
+	        if(dotCount>=2){
+	        	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+	        	HAL_Delay(100);  // 100ms for a dot
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+	        	HAL_Delay(100);  // Gap for a dot
+	        	dotCount=0;
 	        }
 	    }
 
@@ -202,7 +220,7 @@ void morseCodeBlink(char* morseCode){
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	char* asciiMessage = "SOS";
+	char* asciiMessage = "S O S";
 	char* morseEncodedMessage = codeMorse(asciiMessage);
 
 //	printf("Encoded: ");
