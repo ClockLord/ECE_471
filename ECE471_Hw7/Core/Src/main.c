@@ -25,11 +25,12 @@
 /* USER CODE BEGIN Includes */
 #include <ctype.h>
 #include <stdlib.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+static uint8_t received_data;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -92,15 +93,12 @@ void Send(void const * argument);
 
 /* USER CODE BEGIN PFP */
 char* codeMorse( char* codedMessage);
-void UART3_Print(const char* str);
-void UART2_Print(const char* str);
-void UART2_Recieve(void);
 void morseCodeBlink(char* morseCode);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static  uint8_t rx_data;
+
 // basically we have to take ascii code and convert it into morse code via a function.
 static const char* morseCode[] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..",
 		".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-", "..-",
@@ -150,22 +148,7 @@ char* codeMorse(char* asciiMessage) {
 	    // Return the Morse code message.
 	    return morseMessage;
 }
-void UART2_Recieve(){
-#define RX_BUFFER_SIZE 64
-    uint8_t rx_buffer[RX_BUFFER_SIZE];
-    // Global variable to store received data
-    volatile uint8_t rx_buffer_index = 0;
 
-    // Initialize UART2 reception with ISR
-    HAL_UART_Receive_IT(&huart2, &rx_data, 1);
-}
-void UART3_Print(const char* str) {
-    HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), HAL_MAX_DELAY);
-}
-
-void UART2_Print(const char* str) {
-    HAL_UART_Transmit(&huart2, (uint8_t*)str, strlen(str), HAL_MAX_DELAY);
-}
 
 //function blinks an led in morse code
 
@@ -184,7 +167,7 @@ int main(void)
 //	printf(morseEncodedMessage);
 //	printf("\n");
 
-	char* morseMessage = "S O S";
+
 
 
 //	printf("decoded: ");
@@ -216,7 +199,9 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
 
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -387,7 +372,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -574,7 +559,10 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  char* receivedMessage = ".......... ---------- ..........";
+
+	  char* receivedMessage = NULL;
+	  osEvent messageEvent = osMessageGet(MorseDataBuffer, osWaitForever);
+	  receivedMessage = messageEvent.value.p;
 	  morseCodeBlink(receivedMessage);
 
 	  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //for debugging
@@ -598,25 +586,24 @@ void Read(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	//read from uart2
 
 
 
-//	UART2_Recieve();
-//	char received_char = (char)rx_data;
-//	char* encodedMessage = codeMorse(&received_char);
-//	osStatus status = osMessagePut(MorseDataBuffer, encodedMessage, osWaitForever); //send encoded message to the queue
-//
-//	 if (status == osOK)
-//	    {
-//		 	 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-//	    }
-//	    else
-//	    {
-//	    	 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
-//	      // Message sending failed
-//	      // You can handle this situation accordingly, e.g., log an error, retry, or take other actions.
-//	    }
-//	osDelay(10);
+	char received_char = received_data;
+	char* encodedMessage = codeMorse(&received_char);
+	osStatus status = osMessagePut(MorseDataBuffer, encodedMessage, osWaitForever); //send encoded message to the queue
+
+ if (status == osOK)
+   {
+		 	 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+    }
+	    else
+	    {	    	 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+	      // Message sending failed
+	      // You can handle this situation accordingly, e.g., log an error, retry, or take other actions.
+	    }
+	osDelay(10);
 
   }
   /* USER CODE END Read */
@@ -641,11 +628,22 @@ void Send(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-//	  char* asciiMessage = "S O S";
-//	  UART2_Print(asciiMessage);
-//	  UART3_Print(asciiMessage);
-//
-//    osDelay(1);
+	  char* message = "... --- ...";
+      //HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), HAL_MAX_DELAY);
+      HAL_StatusTypeDef status;
+
+      status = HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), HAL_MAX_DELAY);
+
+      if (status == HAL_OK) {
+         //green led on
+    	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+
+      } else if (status == HAL_TIMEOUT) {
+         //red led on
+    	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+      }
+
+    osDelay(1);
   }
   /* USER CODE END Send */
 }
