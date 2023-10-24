@@ -124,7 +124,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
-
+  __HAL_UART_ENABLE_IT(&huart3, UART_IT_RXNE);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -154,7 +154,7 @@ int main(void)
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of SetPwm */
-  osThreadDef(SetPwm, SetPwmTask, osPriorityIdle, 0, 128);
+  osThreadDef(SetPwm, SetPwmTask, osPriorityHigh, 0, 128);
   SetPwmHandle = osThreadCreate(osThread(SetPwm), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -434,6 +434,22 @@ void SetPwmTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  //retrieve the data from the queue PwmDataBufferHandle
+	  BaseType_t status;
+	  uint8_t receivedData;
+
+	  status = xQueueReceive(PwmDataBufferHandle, &receivedData, portMAX_DELAY);
+
+	  if(status == pdPASS){	//if the queue is recieved succesfully
+
+		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //green
+
+	  }
+	  else{	//if the queue is not recieved
+		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); //green
+	  }
+
+
     osDelay(1);
   }
   /* USER CODE END SetPwmTask */
@@ -471,6 +487,7 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+
   }
   /* USER CODE END Error_Handler_Debug */
 }

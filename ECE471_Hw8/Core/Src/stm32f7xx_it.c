@@ -180,7 +180,22 @@ void TIM2_IRQHandler(void)
 void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
+		BaseType_t xSchedulerChanged = pdFALSE;
+		uint8_t buffer;
+		HAL_StatusTypeDef status = HAL_UART_Receive(&huart3, &buffer, 1, 0);
 
+		if (HAL_OK == status) {	//if uart has been recieved
+		   //send the data from uart to the queue
+		    xQueueSendFromISR(PwmDataBufferHandle, &buffer, &xSchedulerChanged);
+		    HAL_UART_Transmit(&huart3, &buffer, 1, HAL_MAX_DELAY);
+		    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+		}
+		else {
+		    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+
+		}
+
+		portYIELD_FROM_ISR(xSchedulerChanged);
   /* USER CODE END USART3_IRQn 0 */
   HAL_UART_IRQHandler(&huart3);
   /* USER CODE BEGIN USART3_IRQn 1 */
