@@ -84,7 +84,7 @@ void StartDefaultTask(void const * argument);
 void SetPwmTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-
+void setLed(uint8_t recievedData);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -428,6 +428,26 @@ void StartDefaultTask(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_SetPwmTask */
+
+//function sets/blinks led based on recieved data 1=blue led 2=green led
+void setLed(uint8_t recievedData){
+
+	if(recievedData=='1'){
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+	}
+
+	else if (recievedData=='2'){
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+	}
+//	else {
+//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+//		osDelay(500);
+//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+//	}
+}
+
 void SetPwmTask(void const * argument)
 {
   /* USER CODE BEGIN SetPwmTask */
@@ -442,12 +462,14 @@ void SetPwmTask(void const * argument)
 
 	  if(status == pdPASS){	//if the queue is recieved succesfully
 
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //green
+		  setLed(receivedData);
+		  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //green
 
 	  }
 	  else{	//if the queue is not recieved
 		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); //green
 	  }
+
 
 
     osDelay(1);

@@ -188,7 +188,7 @@ void USART3_IRQHandler(void)
 		   //send the data from uart to the queue
 		    xQueueSendFromISR(PwmDataBufferHandle, &buffer, &xSchedulerChanged);
 		    HAL_UART_Transmit(&huart3, &buffer, 1, HAL_MAX_DELAY);
-		    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+		    //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 		}
 		else {
 		    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
