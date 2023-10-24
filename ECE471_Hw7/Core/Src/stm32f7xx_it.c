@@ -55,7 +55,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN EV */
@@ -175,22 +175,27 @@ void TIM2_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles USART2 global interrupt.
+  * @brief This function handles USART3 global interrupt.
   */
-void USART2_IRQHandler(void)
+void USART3_IRQHandler(void)
 {
-  /* USER CODE BEGIN USART2_IRQn 0 */
-	 if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE)) {
+  /* USER CODE BEGIN USART3_IRQn 0 */
+	BaseType_t xSchedulerChanged = pdFALSE;
+	uint8_t buffer;
+	HAL_StatusTypeDef status = HAL_UART_Receive(&huart3, &buffer, 1, 0);
 
-		 uint8_t received_data;
-	     HAL_UART_Receive(&huart2, &received_data, 1, HAL_MAX_DELAY); // Receive 1 byte
-	        // Process the received_data here       // For example, print it to another UART or do something else with it
+	if (HAL_OK == status) {
+	    // Send data to recieveBufferHandle from an ISR context
+	    xQueueSendFromISR(recieveBufferHandle, &buffer, &xSchedulerChanged);
+	    HAL_UART_Transmit(&huart3, &buffer, 1, HAL_MAX_DELAY);
 	}
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART2_IRQn 1 */
 
-  /* USER CODE END USART2_IRQn 1 */
+	portYIELD_FROM_ISR(xSchedulerChanged);
+  /* USER CODE END USART3_IRQn 0 */
+  HAL_UART_IRQHandler(&huart3);
+  /* USER CODE BEGIN USART3_IRQn 1 */
+
+  /* USER CODE END USART3_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

@@ -18,24 +18,72 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "string.h"
 #include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <ctype.h>
-#include <stdlib.h>
+#include<string.h>
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-static uint8_t received_data;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+// define the data type for the structure
+struct A2MstructType
+{
+    const char         letter;
+    const char* const morse;
+};
 
+// declare the global constant array of structures as a lookup table
+static const struct A2MstructType cxTABLE[] =
+{
+    { '0', "----- " },  //[0]
+    { '1', ".---- " },
+    { '2', "..--- " },
+    { '3', "...-- " },
+    { '4', "....- " },
+    { '5', "..... " },
+    { '6', "-.... " },
+    { '7', "--... " },
+    { '8', "---.. " },
+    { '9', "----. " },
+    { 'A', ".- " },     //[10]
+    { 'B', "-... " },
+    { 'C', "-.-. " },
+    { 'D', "-.. " },
+    { 'E', ". " },
+    { 'F', "..-. " },
+    { 'G', "--. " },
+    { 'H', ".... " },
+    { 'I', ".. " },
+    { 'J', ".--- " },
+    { 'K', ".-.- " },   //[20]
+    { 'L', ".-.. " },
+    { 'M', "-- " },
+    { 'N', "-. " },
+    { 'O', "--- " },
+    { 'P', ".--. " },
+    { 'Q', "--.- " },
+    { 'R', ".-. " },
+    { 'S', "... " },
+    { 'T', "- " },
+    { 'U', "..- " },    //[30]
+    { 'V', "...- " },
+    { 'W', ".-- " },
+    { 'X', "-..- " },
+    { 'Y', "-.-- " },
+    { 'Z', "--.. " },
+    { ' ', "    " },
+    { '.', ".-.-.- " },
+    { ',', "--..-- " },
+    { '?', "..--.. " },
+};
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,38 +92,15 @@ static uint8_t received_data;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-#if defined ( __ICCARM__ ) /*!< IAR Compiler */
-#pragma location=0x2004c000
-ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-#pragma location=0x2004c0a0
-ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
 
-#elif defined ( __CC_ARM )  /* MDK ARM Compiler */
-
-__attribute__((at(0x2004c000))) ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((at(0x2004c0a0))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined ( __GNUC__ ) /* GNU Compiler */
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));   /* Ethernet Tx DMA Descriptors */
-
-#endif
-
-ETH_TxPacketConfig TxConfig;
-
-ETH_HandleTypeDef heth;
-
-UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
-PCD_HandleTypeDef hpcd_USB_OTG_FS;
-
 osThreadId defaultTaskHandle;
-osThreadId UartReadHandle;
-osThreadId SendUartHandle;
-osMessageQId MorseDataHandle;
-uint8_t MorseDataBuffer[ 50 * sizeof( uint16_t ) ];
-osStaticMessageQDef_t MorseDataControlBlock;
+osThreadId transcodeFuncHandle;
+osThreadId morseCodeGenFunHandle;
+osMessageQId morseQueueHandle;
+osMessageQId recieveBufferHandle;
+osMessageQId transcodeBufferHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -83,75 +108,18 @@ osStaticMessageQDef_t MorseDataControlBlock;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
-static void MX_USB_OTG_FS_PCD_Init(void);
-static void MX_USART2_UART_Init(void);
 void StartDefaultTask(void const * argument);
-void Read(void const * argument);
-void Send(void const * argument);
+void startTranscodeFunc(void const * argument);
+void startMorseCodeGenFunc(void const * argument);
 
 /* USER CODE BEGIN PFP */
-char* codeMorse( char* codedMessage);
-void morseCodeBlink(char* morseCode);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-// basically we have to take ascii code and convert it into morse code via a function.
-static const char* morseCode[] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..",
-		".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-", "..-",
-		"...-", ".--", "-..-", "-.--", "--..", "-----", ".----", "..---", "...--", "....-",
-		".....", "-....", "--...", "---..", "----.", ".-.-.-", "--..--", "..--.."};
-
-//function takes in morse code and decodes it back into ASCII
-
-//function takes in ASCII and codes it into morse code
-char* codeMorse(char* asciiMessage) {
-	   // Define Morse code representations for characters A-Z, 0-9, period, comma, and question tag.
-
-
-	    // Define a string to store the Morse code message.
-	    char morseMessage[500]; // You can adjust the size based on your input size.
-
-	    // Initialize the Morse message as an empty string.
-	    strcpy(morseMessage, "");
-
-	    // Iterate through each character in the input ASCII message.
-	    for (int i = 0; asciiMessage[i] != '\0'; i++) {
-	        // Convert the character to uppercase (ignore the case).
-	        char c = toupper(asciiMessage[i]);
-
-	        // Check if the character is within the specified characters.
-	        if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.' || c == ',' || c == '?') {
-	            // Find the index of the character in the morseCode array.
-	            int index = 0;
-	            if (c >= 'A' && c <= 'Z') {
-	                index = c - 'A';
-	            } else if (c >= '0' && c <= '9') {
-	                index = c - '0' + 26;
-	            } else if (c == '.') {
-	                index = 36;
-	            } else if (c == ',') {
-	                index = 37;
-	            } else if (c == '?') {
-	                index = 38;
-	            }
-
-	            // Append the Morse code for the character to the morseMessage string.
-	            strcat(morseMessage, morseCode[index]);
-	            strcat(morseMessage, " "); // Separate Morse code for different characters.
-	        }
-	    }
-
-	    // Return the Morse code message.
-	    return morseMessage;
-}
-
-
-//function blinks an led in morse code
-
+char buffer;
 /* USER CODE END 0 */
 
 /**
@@ -161,18 +129,6 @@ char* codeMorse(char* asciiMessage) {
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
-
-//	printf("Encoded: ");
-//	printf(morseEncodedMessage);
-//	printf("\n");
-
-
-
-
-//	printf("decoded: ");
-//	printf(decodedMessage);
-//	printf("\n");
 
   /* USER CODE END 1 */
 
@@ -194,14 +150,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ETH_Init();
   MX_USART3_UART_Init();
-  MX_USB_OTG_FS_PCD_Init();
-  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
-
-  HAL_NVIC_EnableIRQ(USART2_IRQn);
+  __HAL_UART_ENABLE_IT(&huart3, UART_IT_RXNE);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -217,9 +168,17 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* definition and creation of MorseData */
-  osMessageQStaticDef(MorseData, 50, uint16_t, MorseDataBuffer, &MorseDataControlBlock);
-  MorseDataHandle = osMessageCreate(osMessageQ(MorseData), NULL);
+  /* definition and creation of morseQueue */
+  osMessageQDef(morseQueue, 16, char);
+  morseQueueHandle = osMessageCreate(osMessageQ(morseQueue), NULL);
+
+  /* definition and creation of recieveBuffer */
+  osMessageQDef(recieveBuffer, 20, char);
+  recieveBufferHandle = osMessageCreate(osMessageQ(recieveBuffer), NULL);
+
+  /* definition and creation of transcodeBuffer */
+  osMessageQDef(transcodeBuffer, 20, char);
+  transcodeBufferHandle = osMessageCreate(osMessageQ(transcodeBuffer), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -227,16 +186,16 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityRealtime, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-  /* definition and creation of UartRead */
-  osThreadDef(UartRead, Read, osPriorityHigh, 0, 128);
-  UartReadHandle = osThreadCreate(osThread(UartRead), NULL);
+  /* definition and creation of transcodeFunc */
+  osThreadDef(transcodeFunc, startTranscodeFunc, osPriorityNormal, 0, 128);
+  transcodeFuncHandle = osThreadCreate(osThread(transcodeFunc), NULL);
 
-  /* definition and creation of SendUart */
-  osThreadDef(SendUart, Send, osPriorityAboveNormal, 0, 128);
-  SendUartHandle = osThreadCreate(osThread(SendUart), NULL);
+  /* definition and creation of morseCodeGenFun */
+  osThreadDef(morseCodeGenFun, startMorseCodeGenFunc, osPriorityAboveNormal, 0, 128);
+  morseCodeGenFunHandle = osThreadCreate(osThread(morseCodeGenFun), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -248,7 +207,6 @@ int main(void)
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
   while (1)
   {
     /* USER CODE END WHILE */
@@ -308,90 +266,6 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ETH Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ETH_Init(void)
-{
-
-  /* USER CODE BEGIN ETH_Init 0 */
-
-  /* USER CODE END ETH_Init 0 */
-
-   static uint8_t MACAddr[6];
-
-  /* USER CODE BEGIN ETH_Init 1 */
-
-  /* USER CODE END ETH_Init 1 */
-  heth.Instance = ETH;
-  MACAddr[0] = 0x00;
-  MACAddr[1] = 0x80;
-  MACAddr[2] = 0xE1;
-  MACAddr[3] = 0x00;
-  MACAddr[4] = 0x00;
-  MACAddr[5] = 0x00;
-  heth.Init.MACAddr = &MACAddr[0];
-  heth.Init.MediaInterface = HAL_ETH_RMII_MODE;
-  heth.Init.TxDesc = DMATxDscrTab;
-  heth.Init.RxDesc = DMARxDscrTab;
-  heth.Init.RxBuffLen = 1524;
-
-  /* USER CODE BEGIN MACADDRESS */
-
-  /* USER CODE END MACADDRESS */
-
-  if (HAL_ETH_Init(&heth) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  memset(&TxConfig, 0 , sizeof(ETH_TxPacketConfig));
-  TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
-  TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
-  TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
-  /* USER CODE BEGIN ETH_Init 2 */
-
-  /* USER CODE END ETH_Init 2 */
-
-}
-
-/**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
-
-}
-
-/**
   * @brief USART3 Initialization Function
   * @param None
   * @retval None
@@ -407,7 +281,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 9600;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
@@ -423,41 +297,6 @@ static void MX_USART3_UART_Init(void)
   /* USER CODE BEGIN USART3_Init 2 */
 
   /* USER CODE END USART3_Init 2 */
-
-}
-
-/**
-  * @brief USB_OTG_FS Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USB_OTG_FS_PCD_Init(void)
-{
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 0 */
-
-  /* USER CODE END USB_OTG_FS_Init 0 */
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 1 */
-
-  /* USER CODE END USB_OTG_FS_Init 1 */
-  hpcd_USB_OTG_FS.Instance = USB_OTG_FS;
-  hpcd_USB_OTG_FS.Init.dev_endpoints = 6;
-  hpcd_USB_OTG_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_OTG_FS.Init.dma_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_OTG_FS.Init.Sof_enable = ENABLE;
-  hpcd_USB_OTG_FS.Init.low_power_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.lpm_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.vbus_sensing_enable = ENABLE;
-  hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USB_OTG_FS_Init 2 */
-
-  /* USER CODE END USB_OTG_FS_Init 2 */
 
 }
 
@@ -492,12 +331,36 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USER_Btn_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : RMII_MDC_Pin RMII_RXD0_Pin RMII_RXD1_Pin */
+  GPIO_InitStruct.Pin = RMII_MDC_Pin|RMII_RXD0_Pin|RMII_RXD1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RMII_REF_CLK_Pin RMII_MDIO_Pin RMII_CRS_DV_Pin */
+  GPIO_InitStruct.Pin = RMII_REF_CLK_Pin|RMII_MDIO_Pin|RMII_CRS_DV_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
   GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : RMII_TXD1_Pin */
+  GPIO_InitStruct.Pin = RMII_TXD1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(RMII_TXD1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : USB_PowerSwitchOn_Pin */
   GPIO_InitStruct.Pin = USB_PowerSwitchOn_Pin;
@@ -511,6 +374,28 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_OverCurrent_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : USB_SOF_Pin USB_ID_Pin USB_DM_Pin USB_DP_Pin */
+  GPIO_InitStruct.Pin = USB_SOF_Pin|USB_ID_Pin|USB_DM_Pin|USB_DP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USB_VBUS_Pin */
+  GPIO_InitStruct.Pin = USB_VBUS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(USB_VBUS_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RMII_TX_EN_Pin RMII_TXD0_Pin */
+  GPIO_InitStruct.Pin = RMII_TX_EN_Pin|RMII_TXD0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -526,32 +411,6 @@ static void MX_GPIO_Init(void)
   * @param  argument: Not used
   * @retval None
   */
-void morseCodeBlink(char* morseCode){
-	int dotCount =0;
-	for (int i = 0; morseCode[i] != '\0'; i++)  {
-	        char symbol = morseCode[i];
-
-	        if (symbol == ' ') {
-	        	 osDelay(600);  // Adjust as needed fo
-
-	        } else if (symbol == '-') {
-	        	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);  // Turn the LED on (replace with your LED control function)
-	        	osDelay(300);  // LED on time (adjust as needed)
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);  // Turn the LED off
-				osDelay(100);  // Gap between dots (adjust as needed)
-	        } else if (symbol == '.') {
-	        	dotCount++;
-	        }	//for some reason quick blinks happen to often this fixes it
-	        if(dotCount>=2){
-	        	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
-				osDelay(100);  // 100ms for a dot
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
-				osDelay(100);  // Gap for a dot
-	        	dotCount=0;
-	        }
-	    }
-
-}
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
@@ -559,93 +418,113 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-
-	  char* receivedMessage = NULL;
-	  osEvent messageEvent = osMessageGet(MorseDataBuffer, osWaitForever);
-	  receivedMessage = messageEvent.value.p;
-	  morseCodeBlink(receivedMessage);
-
-	  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //for debugging
-
+    osDelay(1);
   }
   /* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_Read */
+/* USER CODE BEGIN Header_startTranscodeFunc */
 /**
-* @brief Function implementing the UartRead thread.
+* @brief Function implementing the transcodeFunc thread.
 * @param argument: Not used
 * @retval None
 */
+/* USER CODE END Header_startTranscodeFunc */
+void startTranscodeFunc(void const *argument) {
+    /* USER CODE BEGIN startTranscodeFunc */
+    /* Infinite loop */
+    for (;;) {
 
-//
-/* USER CODE END Header_Read */
-void Read(void const * argument)
-{
-  /* USER CODE BEGIN Read */
-  /* Infinite loop */
-  for(;;)
-  {
-	//read from uart2
+        BaseType_t Status = pdFALSE;
+        uint8_t data;
 
+        if (xQueueReceive(recieveBufferHandle, &data, 1000 / portTICK_PERIOD_MS)) {
+            // Transmit data from receiveBufferHandle to transcodeBufferHandle
+            Status = xQueueSend(transcodeBufferHandle, &data, 1);
 
+            // Toggle GPIO pin based on queue status
+            if (!Status) {
 
-	char received_char = received_data;
-	char* encodedMessage = codeMorse(&received_char);
-	osStatus status = osMessagePut(MorseDataBuffer, encodedMessage, osWaitForever); //send encoded message to the queue
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+            }
+            else {
 
- if (status == osOK)
-   {
-		 	 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+            }
+        }
     }
-	    else
-	    {	    	 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
-	      // Message sending failed
-	      // You can handle this situation accordingly, e.g., log an error, retry, or take other actions.
-	    }
-	osDelay(10);
-
-  }
-  /* USER CODE END Read */
+    /* USER CODE END startTranscodeFunc */
 }
 
-/* USER CODE BEGIN Header_Send */
 
-//data to be sent
-
-
-//char* morseEncodedMessage = codeMorse(asciiMessage);
+/* USER CODE BEGIN Header_startMorseCodeGenFunc */
 /**
-* @brief Function implementing the SendUart thread.
+* @brief Function implementing the morseCodeGenFun thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_Send */
-void Send(void const * argument)
-{
-  /* USER CODE BEGIN Send */
+/* USER CODE END Header_startMorseCodeGenFunc */
+void startMorseCodeGenFunc(void const *argument) {
+    /* USER CODE BEGIN startMorseCodeGenFunc */
+    /* Main loop for generating Morse code */
+    for (;;) {
+        char character;
+        unsigned char tableIndex;
+        unsigned char morseIndex;
+        BaseType_t queueStatus = pdFALSE;
 
-  /* Infinite loop */
-  for(;;)
-  {
-	  char* message = "... --- ...";
-      //HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), HAL_MAX_DELAY);
-      HAL_StatusTypeDef status;
+        // Wait for a character from the input queue
+        while (queueStatus == pdFALSE) {
+            queueStatus = xQueueReceive(transcodeBufferHandle, (void *)&character, 1);
+            if (!queueStatus) {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+            } else {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+            }
+        }
 
-      status = HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), HAL_MAX_DELAY);
+        // Convert lowercase to uppercase and check for exit signal
+        if (character >= 'a' && character <= 'z') {
+            character = character - 'a' + 'A';
+        } else if (character == 1 /* ^A */) {
+            break; // Graceful exit strategy
+        }
 
-      if (status == HAL_OK) {
-         //green led on
-    	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+        // Find the Morse code for the character
+        for (tableIndex = 0; tableIndex < 40; tableIndex++) {
+            if (cxTABLE[tableIndex].letter == character) {
+                break;
+            }
+        }
 
-      } else if (status == HAL_TIMEOUT) {
-         //red led on
-    	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-      }
-
-    osDelay(1);
-  }
-  /* USER CODE END Send */
+        if (tableIndex < 40) {
+            // Transmit the Morse code signals
+            for (morseIndex = 0; cxTABLE[tableIndex].morse[morseIndex] != '\0'; morseIndex++) {
+                switch (cxTABLE[tableIndex].morse[morseIndex]) {
+                case '.':
+                    // Transmit a dot
+                    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+                    osDelay(60);
+                    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+                    osDelay(60);
+                    break;
+                case '-':
+                    // Transmit a dash
+                    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+                    osDelay(180);
+                    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+                    osDelay(60);
+                    break;
+                case ' ':
+                    // Gap between words
+                    osDelay(420);
+                    break;
+                }
+                osDelay(180);
+            }
+        }
+    }
+    /* USER CODE END startMorseCodeGenFunc */
 }
 
 /**

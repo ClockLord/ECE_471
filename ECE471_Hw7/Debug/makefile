@@ -38,34 +38,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := ECE471_Hw7
+BUILD_ARTIFACT_NAME := Hw7
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-ECE471_Hw7.elf \
+Hw7.elf \
 
 MAP_FILES += \
-ECE471_Hw7.map \
+Hw7.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-ECE471_Hw7.list \
+Hw7.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: ECE471_Hw7.elf secondary-outputs
+main-build: Hw7.elf secondary-outputs
 
 # Tool invocations
-ECE471_Hw7.elf ECE471_Hw7.map: $(OBJS) $(USER_OBJS) C:\Users\sucit\OneDrive\Documents\Repositories\ECE_471\ECE471_Hw7\STM32F746ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "ECE471_Hw7.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\sucit\OneDrive\Documents\Repositories\ECE_471\ECE471_Hw7\STM32F746ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ECE471_Hw7.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Hw7.elf Hw7.map: $(OBJS) $(USER_OBJS) C:\Users\sucit\OneDrive\Documents\Repositories\ECE_471\Hw7\STM32F746ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Hw7.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\sucit\OneDrive\Documents\Repositories\ECE_471\Hw7\STM32F746ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Hw7.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -74,14 +74,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-ECE471_Hw7.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "ECE471_Hw7.list"
+Hw7.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "Hw7.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) ECE471_Hw7.elf ECE471_Hw7.list ECE471_Hw7.map default.size.stdout
+	-$(RM) Hw7.elf Hw7.list Hw7.map default.size.stdout
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
