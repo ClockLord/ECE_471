@@ -818,9 +818,9 @@ static void MX_TIM3_Init(void)
  80007b6:	4b2d      	ldr	r3, [pc, #180]	; (800086c <MX_TIM3_Init+0xe8>)
  80007b8:	4a2d      	ldr	r2, [pc, #180]	; (8000870 <MX_TIM3_Init+0xec>)
  80007ba:	601a      	str	r2, [r3, #0]
-  htim3.Init.Prescaler = 218;
+  htim3.Init.Prescaler = 0;
  80007bc:	4b2b      	ldr	r3, [pc, #172]	; (800086c <MX_TIM3_Init+0xe8>)
- 80007be:	22da      	movs	r2, #218	; 0xda
+ 80007be:	2200      	movs	r2, #0
  80007c0:	605a      	str	r2, [r3, #4]
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
  80007c2:	4b2a      	ldr	r3, [pc, #168]	; (800086c <MX_TIM3_Init+0xe8>)
@@ -972,9 +972,9 @@ static void MX_TIM12_Init(void)
  800089a:	4b25      	ldr	r3, [pc, #148]	; (8000930 <MX_TIM12_Init+0xbc>)
  800089c:	4a25      	ldr	r2, [pc, #148]	; (8000934 <MX_TIM12_Init+0xc0>)
  800089e:	601a      	str	r2, [r3, #0]
-  htim12.Init.Prescaler = 218;
+  htim12.Init.Prescaler = 0;
  80008a0:	4b23      	ldr	r3, [pc, #140]	; (8000930 <MX_TIM12_Init+0xbc>)
- 80008a2:	22da      	movs	r2, #218	; 0xda
+ 80008a2:	2200      	movs	r2, #0
  80008a4:	605a      	str	r2, [r3, #4]
   htim12.Init.CounterMode = TIM_COUNTERMODE_UP;
  80008a6:	4b22      	ldr	r3, [pc, #136]	; (8000930 <MX_TIM12_Init+0xbc>)
@@ -1700,14 +1700,13 @@ void SetPwmTask(void const * argument)
  8000d0a:	daef      	bge.n	8000cec <SetPwmTask+0x38>
  8000d0c:	e02b      	b.n	8000d66 <SetPwmTask+0xb2>
 			 }
-
 		 }
 
 		 else if (receivedData=='g'){
  8000d0e:	7afb      	ldrb	r3, [r7, #11]
  8000d10:	2b67      	cmp	r3, #103	; 0x67
  8000d12:	d113      	bne.n	8000d3c <SetPwmTask+0x88>
-			 for(int i=10;i>=0;i--){
+			 for(int i=10;i>=0;i--){	//cycle through all states of pwm
  8000d14:	230a      	movs	r3, #10
  8000d16:	613b      	str	r3, [r7, #16]
  8000d18:	e00c      	b.n	8000d34 <SetPwmTask+0x80>
@@ -1720,7 +1719,7 @@ void SetPwmTask(void const * argument)
 				 osDelay(500);
  8000d26:	f44f 70fa 	mov.w	r0, #500	; 0x1f4
  8000d2a:	f005 fae4 	bl	80062f6 <osDelay>
-			 for(int i=10;i>=0;i--){
+			 for(int i=10;i>=0;i--){	//cycle through all states of pwm
  8000d2e:	693b      	ldr	r3, [r7, #16]
  8000d30:	3b01      	subs	r3, #1
  8000d32:	613b      	str	r3, [r7, #16]

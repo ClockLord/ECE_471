@@ -10,5 +10,5 @@
 ../Core/Src/main.c:542:6:setPWM	14
 ../Core/Src/main.c:603:6:StartDefaultTask	1
 ../Core/Src/main.c:622:6:SetPwmTask	7
-../Core/Src/main.c:677:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/main.c:692:6:Error_Handler	1
+../Core/Src/main.c:676:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:691:6:Error_Handler	1
