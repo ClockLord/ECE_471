@@ -23,6 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -84,7 +85,7 @@ void StartDefaultTask(void const * argument);
 void SetPwmTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-void setLed(uint8_t recievedData);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -96,8 +97,11 @@ enum led {
 
 static enum led redLed = red;
 static enum led greenLed = green;
+static int max = 65535;
+static bool blueFlag = false;
 
-
+void setLed(uint8_t recievedData);
+void checkFlag(void);
 void setPWM(enum led led, int value);
 
 
@@ -515,34 +519,23 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-//function sets/blinks led based on recieved data 1=blue led 2=green led
+//function sets/blinks led based on recieved data 1=blue led 2=green (used for debugging purposes)
 void setLed(uint8_t recievedData){
-	if(recievedData=='1'){	//red
-//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
-//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+	if(recievedData=='1'){
 		TIM12->CCR1 = 65535;
 		TIM3->CCR3 = 0;
 	}
 	else if (recievedData=='2'){  //green
 		TIM3->CCR3 = 65535;
 		TIM12->CCR1 = 0;
-
-//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 	}
-//	else {
-//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-//		osDelay(500);
-//		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
-//	}
 }
 
-static int max = 65535;
+
 //function sets PWM to a desired value from 0 - 11
 void setPWM(enum led led, int value){
 
 	int dutyCycle = 0;
-
 
 		switch(value){	//set the duty cycle
 			case 0:
@@ -582,13 +575,26 @@ void setPWM(enum led led, int value){
 				dutyCycle = 0;
 		}
 
+		if(led == green){
+			TIM3->CCR3 = dutyCycle;
+		}
 
-	if(led == green){
-        TIM3->CCR3 = dutyCycle;
+		else if (led == red){
+			TIM12->CCR1 = dutyCycle;
+		}
+}
+
+void checkFlag(){
+
+
+	if (blueFlag==false){
+		osDelay(200);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 	}
-	else if (led == red){
-        TIM12->CCR1 = dutyCycle;
-	}
+	else if(blueFlag==true){
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+		}
+
 }
 
 /* USER CODE END 4 */
@@ -607,7 +613,8 @@ void StartDefaultTask(void const * argument)
 /* Infinite loop */
 for(;;)
 {
-osDelay(1);
+	checkFlag();
+	osDelay(1);
 }
   /* USER CODE END 5 */
 }
@@ -626,41 +633,38 @@ void SetPwmTask(void const * argument)
 /* Infinite loop */
 for(;;)
 {
-
-	 //retrieve the data from the queue PwmDataBufferHandle
-//	 enum led green = green;
-//	 enum led red = red;
 	 BaseType_t status;
 	 uint8_t receivedData;
 	 status = xQueueReceive(PwmDataBufferHandle, &receivedData, portMAX_DELAY);
-	 if(status == pdPASS){	//if the queue is recieved succesfully
-		// setLed(receivedData);
-		 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET); //green
 
-		 if(receivedData=='r'){	//red
-			 for(int i=10;i>=0;i--){
-				 setPWM(redLed,i);
-				 osDelay(500);
-			 }
-		 }
+		 if(status == pdPASS){	//if the queue is recieved succesfully
 
-		 else if (receivedData=='g'){
-			 for(int i=10;i>=0;i--){	//cycle through all states of pwm
-				 setPWM(greenLed,i);
-				 osDelay(500);
-			}
+			 blueFlag = true;
+
+				 if(receivedData=='r'){		//cycle through all states of pwm
+					 for(int i=10;i>=0;i--){
+						 setPWM(redLed,i);
+
+					 }
+				 }
+
+				 else if (receivedData=='g'){
+					 for(int i=10;i>=0;i--){	//cycle through all states of pwm
+						 setPWM(greenLed,i);
+
+
+					}
+				 }
+
+
 		 }
-		 else if (receivedData =='c'){
-			 setPWM(greenLed,0);
-			 setPWM(redLed,0);
-		 }
-		 //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); //green
-	 }
-	 else{	//if the queue is not recieved
-		// HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET); //green
-		 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
-	 }
-osDelay(1);
+			//for debugging purposes
+			 blueFlag = false;
+
+
+
+
+
 }
   /* USER CODE END SetPwmTask */
 }

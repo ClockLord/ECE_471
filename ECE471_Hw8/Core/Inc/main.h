@@ -32,7 +32,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "cmsis_os.h"
-
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -57,6 +57,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 extern osMessageQId PwmDataBufferHandle;
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
