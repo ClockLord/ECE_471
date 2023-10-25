@@ -103,7 +103,7 @@ static bool blueFlag = false;
 void setLed(uint8_t recievedData);
 void checkFlag(void);
 void setPWM(enum led led, int value);
-
+void killSwitch(void);
 
 /* USER CODE END 0 */
 
@@ -519,7 +519,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-//function sets/blinks led based on recieved data 1=blue led 2=green (used for debugging purposes)
+//function sets/blinks led based on recieved data 1=blue led 2=green (used for debugging purposes only)
 void setLed(uint8_t recievedData){
 	if(recievedData=='1'){
 		TIM12->CCR1 = 65535;
@@ -584,7 +584,7 @@ void setPWM(enum led led, int value){
 		}
 }
 
-void checkFlag(){
+void checkFlag(){	//implement blueLed functionality
 
 
 	if (blueFlag==false){
@@ -595,6 +595,17 @@ void checkFlag(){
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
 		}
 
+}
+
+void killSwitch(){	//implement killSwitch functionality
+
+	 if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET) {
+
+		 TIM3->CCR3 = 0;
+		 TIM12->CCR1 = 0;
+		 osDelay(200);	//debouncing delay
+
+	 }
 }
 
 /* USER CODE END 4 */
@@ -611,11 +622,11 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN 5 */
 
 /* Infinite loop */
-for(;;)
-{
-	checkFlag();
-	osDelay(1);
-}
+	for(;;)
+	{
+		killSwitch();
+		checkFlag();
+	}
   /* USER CODE END 5 */
 }
 
@@ -631,41 +642,41 @@ void SetPwmTask(void const * argument)
   /* USER CODE BEGIN SetPwmTask */
 
 /* Infinite loop */
-for(;;)
-{
-	 BaseType_t status;
-	 uint8_t receivedData;
-	 status = xQueueReceive(PwmDataBufferHandle, &receivedData, portMAX_DELAY);
+	for(;;)
+	{
+		 BaseType_t status;
+		 uint8_t receivedData;
+		 status = xQueueReceive(PwmDataBufferHandle, &receivedData, portMAX_DELAY);
 
-		 if(status == pdPASS){	//if the queue is recieved succesfully
+			 if(status == pdPASS){	//if the queue is recieved succesfully
 
-			 blueFlag = true;
+				 blueFlag = true;	//set blueflag to true if data has been recieved
 
-				 if(receivedData=='r'){		//cycle through all states of pwm
-					 for(int i=10;i>=0;i--){
-						 setPWM(redLed,i);
+					 if(receivedData=='r'){
+
+							 setPWM(redLed,10);
+
 
 					 }
-				 }
 
-				 else if (receivedData=='g'){
-					 for(int i=10;i>=0;i--){	//cycle through all states of pwm
-						 setPWM(greenLed,i);
+					 else if (receivedData=='g'){
 
-
-					}
-				 }
+							 setPWM(greenLed,10);
+					 }
 
 
-		 }
-			//for debugging purposes
-			 blueFlag = false;
+			 }
+
+		 osDelay(200);
+		 blueFlag = false;	//set blueflag to false if data has not been recieved
 
 
 
 
 
-}
+
+
+	}
   /* USER CODE END SetPwmTask */
 }
 

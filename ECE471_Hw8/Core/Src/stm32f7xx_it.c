@@ -191,7 +191,7 @@ void USART3_IRQHandler(void)
 		    HAL_UART_Transmit(&huart3, &buffer, 1, HAL_MAX_DELAY);
 		}
 		else{
-
+			//for debugging purposes
 		}
 
 

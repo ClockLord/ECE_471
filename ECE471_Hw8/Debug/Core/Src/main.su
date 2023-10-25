@@ -9,7 +9,8 @@
 ../Core/Src/main.c:523:6:setLed	16	static
 ../Core/Src/main.c:536:6:setPWM	24	static
 ../Core/Src/main.c:587:6:checkFlag	8	static
-../Core/Src/main.c:609:6:StartDefaultTask	16	static
-../Core/Src/main.c:629:6:SetPwmTask	32	static
-../Core/Src/main.c:678:6:HAL_TIM_PeriodElapsedCallback	16	static
-../Core/Src/main.c:693:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:600:6:killSwitch	8	static
+../Core/Src/main.c:620:6:StartDefaultTask	16	static
+../Core/Src/main.c:640:6:SetPwmTask	24	static
+../Core/Src/main.c:691:6:HAL_TIM_PeriodElapsedCallback	16	static
+../Core/Src/main.c:706:6:Error_Handler	4	static,ignoring_inline_asm
