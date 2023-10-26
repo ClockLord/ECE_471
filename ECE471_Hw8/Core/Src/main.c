@@ -99,6 +99,8 @@ static enum led redLed = red;
 static enum led greenLed = green;
 static int max = 65535;
 static bool blueFlag = false;
+//static bool dataRead = false;
+static bool active = false;
 
 void setLed(uint8_t recievedData);
 void checkFlag(void);
@@ -625,7 +627,7 @@ void StartDefaultTask(void const * argument)
 	for(;;)
 	{
 		killSwitch();
-		checkFlag();
+		//checkFlag();
 	}
   /* USER CODE END 5 */
 }
@@ -644,31 +646,123 @@ void SetPwmTask(void const * argument)
 /* Infinite loop */
 	for(;;)
 	{
+
 		 BaseType_t status;
-		 uint8_t receivedData;
-		 status = xQueueReceive(PwmDataBufferHandle, &receivedData, portMAX_DELAY);
+		 uint8_t a,b,c,d;
+
+		 status = xQueueReceive(PwmDataBufferHandle, &a, portMAX_DELAY);
 
 			 if(status == pdPASS){	//if the queue is recieved succesfully
 
-				 blueFlag = true;	//set blueflag to true if data has been recieved
-
-					 if(receivedData=='r'){
-
-							 setPWM(redLed,10);
+				//	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
 
 
-					 }
 
-					 else if (receivedData=='g'){
+				 if(a==255){	//if the data is 255 start the readin
 
-							 setPWM(greenLed,10);
-					 }
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+					osDelay(50);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+					xQueueReceive(PwmDataBufferHandle, &b, portMAX_DELAY);
+					xQueueReceive(PwmDataBufferHandle, &c, portMAX_DELAY);
+					xQueueReceive(PwmDataBufferHandle, &d, portMAX_DELAY);
 
+					uint8_t green_pwm = (b >> 4) & 0x0F; // Extract the upper 4 bits
+					uint8_t red_pwm = b & 0x0F;
+
+					//if((a^b^c^d) == 0){
+						switch(c){
+
+							case 2:
+								active=true;
+								break;
+
+							case 1:
+								active=false;
+								break;
+
+						}
+
+				//	if(active == true){
+
+						switch (green_pwm) {
+				    case 0:
+				        setPWM(greenLed, 10);  // Green PWM = 0%
+				        break;
+				    case 1:
+				        setPWM(greenLed, 1); // Green PWM = 10%
+				        break;
+				    case 2:
+				        setPWM(greenLed, 2); // Green PWM = 20%
+				        break;
+				    case 3:
+				        setPWM(greenLed, 3); // Green PWM = 30%
+				        break;
+				    case 4:
+				        setPWM(greenLed, 4); // Green PWM = 40%
+				        break;
+				    case 5:
+				        setPWM(greenLed, 5); // Green PWM = 50%
+				        break;
+				    case 6:
+				        setPWM(greenLed, 6); // Green PWM = 60%
+				        break;
+				    case 7:
+				        setPWM(greenLed, 7); // Green PWM = 70%
+				        break;
+				    case 8:
+				        setPWM(greenLed, 8); // Green PWM = 80%
+				        break;
+				    case 9:
+				        setPWM(greenLed, 9); // Green PWM = 90%
+				        break;
+				    case 10:
+				        setPWM(greenLed, 10); // Green PWM = 100%
+				        break;
+				}
+
+				switch (red_pwm) {
+					case 0:
+						setPWM(redLed, 10);  // Green PWM = 0%
+						break;
+					case 1:
+						setPWM(redLed, 1); // Green PWM = 10%
+						break;
+					case 2:
+						setPWM(redLed, 2); // Green PWM = 20%
+						break;
+					case 3:
+						setPWM(redLed, 3); // Green PWM = 30%
+						break;
+					case 4:
+						setPWM(redLed, 4); // Green PWM = 40%
+						break;
+					case 5:
+						setPWM(redLed, 5); // Green PWM = 50%
+						break;
+					case 6:
+						setPWM(redLed, 6); // Green PWM = 60%
+						break;
+					case 7:
+						setPWM(redLed, 7); // Green PWM = 70%
+						break;
+					case 8:
+						setPWM(redLed, 8); // Green PWM = 80%
+						break;
+					case 9:
+						setPWM(redLed, 9); // Green PWM = 90%
+						break;
+					case 10:
+						setPWM(redLed, 10); // Green PWM = 100%
+						break;
+				}
 
 			 }
+		 }
+			 //}
 
-		 osDelay(200);
-		 blueFlag = false;	//set blueflag to false if data has not been recieved
+		// osDelay(200);
+		// blueFlag = false;	//set blueflag to false if data has not been recieved
 
 
 

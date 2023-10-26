@@ -189,6 +189,10 @@ void USART3_IRQHandler(void)
 
 		    xQueueSendFromISR(PwmDataBufferHandle, &buffer, &xSchedulerChanged);
 		    HAL_UART_Transmit(&huart3, &buffer, 1, HAL_MAX_DELAY);
+
+		    if(buffer == 255){
+
+		    }
 		}
 		else{
 			//for debugging purposes
