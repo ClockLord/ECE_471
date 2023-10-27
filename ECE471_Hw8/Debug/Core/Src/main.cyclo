@@ -11,6 +11,6 @@
 ../Core/Src/main.c:589:6:checkFlag	3
 ../Core/Src/main.c:602:6:killSwitch	2
 ../Core/Src/main.c:622:6:StartDefaultTask	1
-../Core/Src/main.c:642:6:SetPwmTask	28
-../Core/Src/main.c:751:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/main.c:766:6:Error_Handler	1
+../Core/Src/main.c:642:6:SetPwmTask	31
+../Core/Src/main.c:765:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:780:6:Error_Handler	1

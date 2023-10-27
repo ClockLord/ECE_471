@@ -654,9 +654,14 @@ void SetPwmTask(void const * argument)
 
 			 if(status == pdPASS){	//if the queue is recieved succesfully
 
-				//	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
 
 
+				 if(!active){
+
+					 setPWM(redLed, 0);
+					 setPWM(greenLed, 0);
+				 }
 
 				 if(a==255){	//if the data is 255 start the readin
 
@@ -675,37 +680,34 @@ void SetPwmTask(void const * argument)
 
 					if((255^b^c^d) == 0){
 
-						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
-						osDelay(50);
-						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
-					}
-
-
-
-				//	if(active == true){
+						if (c == 0b0010) {
+						    active = true;
+						} else if (c == 0b0001) {
+						    active = false;
+						}
 
 						if (green_pwm == 0b0000) {
-						    setPWM(greenLed, 0);  // Green PWM = 0%
+							setPWM(greenLed, 0);  // Green PWM = 0%
 						} else if (green_pwm == 0b0001) {
-						    setPWM(greenLed, 1); // Green PWM = 10%
+							setPWM(greenLed, 1); // Green PWM = 10%
 						} else if (green_pwm == 0b0010) {
-						    setPWM(greenLed, 2); // Green PWM = 20%
+							setPWM(greenLed, 2); // Green PWM = 20%
 						} else if (green_pwm == 0b0011) {
-						    setPWM(greenLed, 3); // Green PWM = 30%
+							setPWM(greenLed, 3); // Green PWM = 30%
 						} else if (green_pwm == 0b0100) {
-						    setPWM(greenLed, 4); // Green PWM = 40%
+							setPWM(greenLed, 4); // Green PWM = 40%
 						} else if (green_pwm == 0b0101) {
-						    setPWM(greenLed, 5); // Green PWM = 50%
+							setPWM(greenLed, 5); // Green PWM = 50%
 						} else if (green_pwm == 0b0110) {
-						    setPWM(greenLed, 6); // Green PWM = 60%
+							setPWM(greenLed, 6); // Green PWM = 60%
 						} else if (green_pwm == 0b0111) {
-						    setPWM(greenLed, 7); // Green PWM = 70%
+							setPWM(greenLed, 7); // Green PWM = 70%
 						} else if (green_pwm == 0b1000) {
-						    setPWM(greenLed, 8); // Green PWM = 80%
+							setPWM(greenLed, 8); // Green PWM = 80%
 						} else if (green_pwm == 0b1001) {
-						    setPWM(greenLed, 9); // Green PWM = 90%
+							setPWM(greenLed, 9); // Green PWM = 90%
 						} else if (green_pwm >= 0b1010 && green_pwm <= 0b1111) {
-						    setPWM(greenLed, 10); // Green PWM = 100%
+							setPWM(greenLed, 10); // Green PWM = 100%
 						}
 
 						if (red_pwm == 0b0000) {
@@ -732,9 +734,21 @@ void SetPwmTask(void const * argument)
 							setPWM(redLed, 10); // Green PWM = 100%
 						}
 
+
+					}
+
+
+
+
+				//	if(active == true){
+
+
 			// }
 		 }
 	 }
+			 osDelay(200);	//debouncing delay
+
+HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
 
 	}
   /* USER CODE END SetPwmTask */
