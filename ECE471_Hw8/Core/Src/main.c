@@ -648,8 +648,8 @@ void SetPwmTask(void const * argument)
 	{
 
 		 BaseType_t status;
-		 uint8_t a,b,c,d;
-
+		 uint8_t a,c,d;
+		 uint8_t b =0x00;
 		 status = xQueueReceive(PwmDataBufferHandle, &a, portMAX_DELAY);
 
 			 if(status == pdPASS){	//if the queue is recieved succesfully
@@ -660,115 +660,81 @@ void SetPwmTask(void const * argument)
 
 				 if(a==255){	//if the data is 255 start the readin
 
-					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
-					osDelay(50);
-					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+
+
 					xQueueReceive(PwmDataBufferHandle, &b, portMAX_DELAY);
 					xQueueReceive(PwmDataBufferHandle, &c, portMAX_DELAY);
 					xQueueReceive(PwmDataBufferHandle, &d, portMAX_DELAY);
 
+					b = (uint8_t)b;
+					c = (uint8_t)c;
+					d = (uint8_t)d;
+
 					uint8_t green_pwm = (b >> 4) & 0x0F; // Extract the upper 4 bits
 					uint8_t red_pwm = b & 0x0F;
 
-					//if((a^b^c^d) == 0){
-						switch(c){
+					if((255^b^c^d) == 0){
 
-							case 2:
-								active=true;
-								break;
+						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+						osDelay(50);
+						HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+					}
 
-							case 1:
-								active=false;
-								break;
 
-						}
 
 				//	if(active == true){
 
-						switch (green_pwm) {
-				    case 0:
-				        setPWM(greenLed, 10);  // Green PWM = 0%
-				        break;
-				    case 1:
-				        setPWM(greenLed, 1); // Green PWM = 10%
-				        break;
-				    case 2:
-				        setPWM(greenLed, 2); // Green PWM = 20%
-				        break;
-				    case 3:
-				        setPWM(greenLed, 3); // Green PWM = 30%
-				        break;
-				    case 4:
-				        setPWM(greenLed, 4); // Green PWM = 40%
-				        break;
-				    case 5:
-				        setPWM(greenLed, 5); // Green PWM = 50%
-				        break;
-				    case 6:
-				        setPWM(greenLed, 6); // Green PWM = 60%
-				        break;
-				    case 7:
-				        setPWM(greenLed, 7); // Green PWM = 70%
-				        break;
-				    case 8:
-				        setPWM(greenLed, 8); // Green PWM = 80%
-				        break;
-				    case 9:
-				        setPWM(greenLed, 9); // Green PWM = 90%
-				        break;
-				    case 10:
-				        setPWM(greenLed, 10); // Green PWM = 100%
-				        break;
-				}
+						if (green_pwm == 0b0000) {
+						    setPWM(greenLed, 0);  // Green PWM = 0%
+						} else if (green_pwm == 0b0001) {
+						    setPWM(greenLed, 1); // Green PWM = 10%
+						} else if (green_pwm == 0b0010) {
+						    setPWM(greenLed, 2); // Green PWM = 20%
+						} else if (green_pwm == 0b0011) {
+						    setPWM(greenLed, 3); // Green PWM = 30%
+						} else if (green_pwm == 0b0100) {
+						    setPWM(greenLed, 4); // Green PWM = 40%
+						} else if (green_pwm == 0b0101) {
+						    setPWM(greenLed, 5); // Green PWM = 50%
+						} else if (green_pwm == 0b0110) {
+						    setPWM(greenLed, 6); // Green PWM = 60%
+						} else if (green_pwm == 0b0111) {
+						    setPWM(greenLed, 7); // Green PWM = 70%
+						} else if (green_pwm == 0b1000) {
+						    setPWM(greenLed, 8); // Green PWM = 80%
+						} else if (green_pwm == 0b1001) {
+						    setPWM(greenLed, 9); // Green PWM = 90%
+						} else if (green_pwm >= 0b1010 && green_pwm <= 0b1111) {
+						    setPWM(greenLed, 10); // Green PWM = 100%
+						}
 
-				switch (red_pwm) {
-					case 0:
-						setPWM(redLed, 10);  // Green PWM = 0%
-						break;
-					case 1:
-						setPWM(redLed, 1); // Green PWM = 10%
-						break;
-					case 2:
-						setPWM(redLed, 2); // Green PWM = 20%
-						break;
-					case 3:
-						setPWM(redLed, 3); // Green PWM = 30%
-						break;
-					case 4:
-						setPWM(redLed, 4); // Green PWM = 40%
-						break;
-					case 5:
-						setPWM(redLed, 5); // Green PWM = 50%
-						break;
-					case 6:
-						setPWM(redLed, 6); // Green PWM = 60%
-						break;
-					case 7:
-						setPWM(redLed, 7); // Green PWM = 70%
-						break;
-					case 8:
-						setPWM(redLed, 8); // Green PWM = 80%
-						break;
-					case 9:
-						setPWM(redLed, 9); // Green PWM = 90%
-						break;
-					case 10:
-						setPWM(redLed, 10); // Green PWM = 100%
-						break;
-				}
+						if (red_pwm == 0b0000) {
+							setPWM(redLed, 0);  // Green PWM = 0%
+						} else if (red_pwm == 0b0001) {
+							setPWM(redLed, 1); // Green PWM = 10%
+						} else if (red_pwm == 0b0010) {
+							setPWM(redLed, 2); // Green PWM = 20%
+						} else if (red_pwm == 0b0011) {
+							setPWM(redLed, 3); // Green PWM = 30%
+						} else if (red_pwm == 0b0100) {
+							setPWM(redLed, 4); // Green PWM = 40%
+						} else if (red_pwm == 0b0101) {
+							setPWM(redLed, 5); // Green PWM = 50%
+						} else if (red_pwm == 0b0110) {
+							setPWM(redLed, 6); // Green PWM = 60%
+						} else if (red_pwm == 0b0111) {
+							setPWM(redLed, 7); // Green PWM = 70%
+						} else if (red_pwm == 0b1000) {
+							setPWM(redLed, 8); // Green PWM = 80%
+						} else if (red_pwm == 0b1001) {
+							setPWM(redLed, 9); // Green PWM = 90%
+						} else if (red_pwm >= 0b1010 && red_pwm <= 0b1111) {
+							setPWM(redLed, 10); // Green PWM = 100%
+						}
 
-			 }
+			// }
 		 }
-			 //}
-
-		// osDelay(200);
-		// blueFlag = false;	//set blueflag to false if data has not been recieved
-
-
-
-
-
-
+	 }
 
 	}
   /* USER CODE END SetPwmTask */
