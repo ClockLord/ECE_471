@@ -1,0 +1,13 @@
+../Core/Src/main.c:72:10:custom_SSI_handler	10
+../Core/Src/main.c:130:14:setRED	3
+../Core/Src/main.c:142:14:setGRN	3
+../Core/Src/main.c:154:14:setBLU	3
+../Core/Src/main.c:166:14:setALL	8
+../Core/Src/main.c:210:5:main	1
+../Core/Src/main.c:283:6:SystemClock_Config	3
+../Core/Src/main.c:333:13:MX_USART3_UART_Init	2
+../Core/Src/main.c:368:13:MX_USB_OTG_FS_PCD_Init	2
+../Core/Src/main.c:403:13:MX_GPIO_Init	1
+../Core/Src/main.c:464:6:StartDefaultTask	1
+../Core/Src/main.c:491:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:508:6:Error_Handler	1

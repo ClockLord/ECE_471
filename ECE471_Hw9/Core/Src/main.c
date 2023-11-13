@@ -18,11 +18,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "string.h"
+#include "cmsis_os.h"
+#include "lwip.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "lwip/apps/httpd.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,31 +43,12 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-#if defined ( __ICCARM__ ) /*!< IAR Compiler */
-#pragma location=0x2004c000
-ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-#pragma location=0x2004c0a0
-ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined ( __CC_ARM )  /* MDK ARM Compiler */
-
-__attribute__((at(0x2004c000))) ETH_DMADescTypeDef  DMARxDscrTab[ETH_RX_DESC_CNT]; /* Ethernet Rx DMA Descriptors */
-__attribute__((at(0x2004c0a0))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptors */
-
-#elif defined ( __GNUC__ ) /* GNU Compiler */
-ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));   /* Ethernet Tx DMA Descriptors */
-
-#endif
-
-ETH_TxPacketConfig TxConfig;
-
-ETH_HandleTypeDef heth;
 
 UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
+osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -73,23 +56,150 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
+void StartDefaultTask(void const * argument);
+
 /* USER CODE BEGIN PFP */
-enum led {
-	red,
-	green
-};
 
-static enum led redLed = red;
-static enum led greenLed = green;
-
-void setPWM(enum led led, int value);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define custom_SSI_tag_num 4
+const char* custom_SSI_tags[custom_SSI_tag_num] = {"lred", "lgreen", "lblue", "buser"};
+
+uint16_t custom_SSI_handler(const char* ssi_tag_name, char *pcInsert, int iInsertLen)
+{
+  if ( iInsertLen < 10 ) {
+      // if the buffer size is smaller than the longest response then indicate an error
+      return(-1);
+  }
+
+  if (strcmp(ssi_tag_name, custom_SSI_tags[0])==0) {
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14)) {
+          strcpy(pcInsert, "1");
+      } else {
+          strcpy(pcInsert, "0");
+      }
+      return(strlen(pcInsert));
+  } else if (strcmp(ssi_tag_name, custom_SSI_tags[1])==0) {
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)) {
+          strcpy(pcInsert, "1");
+      } else {
+          strcpy(pcInsert, "0");
+      }
+      return(strlen(pcInsert));
+  } else if (strcmp(ssi_tag_name, custom_SSI_tags[2])==0) {
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7)) {
+          strcpy(pcInsert, "1");
+      } else {
+          strcpy(pcInsert, "0");
+      }
+      return(strlen(pcInsert));
+  } else if (strcmp(ssi_tag_name, custom_SSI_tags[3])==0) {
+      if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)) {
+          strcpy(pcInsert, "pressed");
+      } else {
+          strcpy(pcInsert, "released");
+      }
+      return(strlen(pcInsert));
+  } else {
+      // otherwise, return unrecognized tag error
+    return(-1);
+  }
+
+}
+
+
+
+/*
+ * Function pointer for a CGI script handler.
+ *
+ * The function should return a pointer to a character string which is the
+ * path and filename of the response that is to be sent to the connected
+ * browser, for example "/thanks.htm" or "/response/error.ssi".
+ *
+ * Requests intended for use by this CGI mechanism must be sent using the GET
+ * method (which encodes all parameters within the URI rather than in a block
+ * later in the request). Attempts to use the POST method will result in the
+ * request being ignored.
+ *
+ */
+
+const char * setRED(int iIndex, int iNumParams, char *pcParam[], char *pcValue[])
+{
+    if (iNumParams==1) {
+        if (atoi(pcValue[0])==1) {
+            HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+        } else {
+            HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+        }
+    }
+    return("/index.shtml");
+}
+
+const char * setGRN(int iIndex, int iNumParams, char *pcParam[], char *pcValue[])
+{
+    if (iNumParams==1) {
+        if (atoi(pcValue[0])==1) {
+            HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+        } else {
+            HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+        }
+    }
+    return("/index.shtml");
+}
+
+const char * setBLU(int iIndex, int iNumParams, char *pcParam[], char *pcValue[])
+{
+    if (iNumParams==1) {
+        if (atoi(pcValue[0])==1) {
+            HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+        } else {
+            HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+        }
+    }
+    return("/index.shtml");
+}
+
+const char * setALL(int iIndex, int iNumParams, char *pcParam[], char *pcValue[])
+{
+    // Warning: use atoi_r instead of atoi in case you also use this function inside a RTOS task
+    for (int i=0; i<iNumParams; i++) {
+        if (strcmp(pcParam[i],"red")==0) {
+            if (atoi(pcValue[i])==1) {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+            } else {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+            }
+        } else if (strcmp(pcParam[i],"green")==0) {
+            if (atoi(pcValue[i])==1) {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+            } else {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+            }
+        } else if (strcmp(pcParam[i],"blue")==0) {
+            if (atoi(pcValue[i])==1) {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+            } else {
+                HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+            }
+        } // else invalid parameters are simply ignored in this example
+    }
+    // we return the status page as confirmation in this example
+    return("/index.shtml");
+}
+
+#define custon_CGI_handler_num 4
+const tCGI custom_CGI_handlers[custon_CGI_handler_num] = {
+    //  file name   function called
+    {"/setall.cgi",   setALL},
+    {"/setred.cgi",   setRED},
+    {"/setgreen.cgi", setGRN},
+    {"/setblue.cgi",  setBLU}
+};
+
 
 /* USER CODE END 0 */
 
@@ -121,13 +231,40 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ETH_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
 
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* definition and creation of defaultTask */
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 1024);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
+  osKernelStart();
+  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -186,55 +323,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief ETH Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ETH_Init(void)
-{
-
-  /* USER CODE BEGIN ETH_Init 0 */
-
-  /* USER CODE END ETH_Init 0 */
-
-   static uint8_t MACAddr[6];
-
-  /* USER CODE BEGIN ETH_Init 1 */
-
-  /* USER CODE END ETH_Init 1 */
-  heth.Instance = ETH;
-  MACAddr[0] = 0x00;
-  MACAddr[1] = 0x80;
-  MACAddr[2] = 0xE1;
-  MACAddr[3] = 0x00;
-  MACAddr[4] = 0x00;
-  MACAddr[5] = 0x00;
-  heth.Init.MACAddr = &MACAddr[0];
-  heth.Init.MediaInterface = HAL_ETH_RMII_MODE;
-  heth.Init.TxDesc = DMATxDscrTab;
-  heth.Init.RxDesc = DMARxDscrTab;
-  heth.Init.RxBuffLen = 1524;
-
-  /* USER CODE BEGIN MACADDRESS */
-
-  /* USER CODE END MACADDRESS */
-
-  if (HAL_ETH_Init(&heth) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  memset(&TxConfig, 0 , sizeof(ETH_TxPacketConfig));
-  TxConfig.Attributes = ETH_TX_PACKETS_FEATURES_CSUM | ETH_TX_PACKETS_FEATURES_CRCPAD;
-  TxConfig.ChecksumCtrl = ETH_CHECKSUM_IPHDR_PAYLOAD_INSERT_PHDR_CALC;
-  TxConfig.CRCPadCtrl = ETH_CRC_PAD_INSERT;
-  /* USER CODE BEGIN ETH_Init 2 */
-
-  /* USER CODE END ETH_Init 2 */
-
 }
 
 /**
@@ -365,6 +453,53 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void const * argument)
+{
+  /* init code for LWIP */
+  MX_LWIP_Init();
+  /* USER CODE BEGIN 5 */
+  //set up the web server
+  http_set_ssi_handler(custom_SSI_handler, custom_SSI_tags, custom_SSI_tag_num);
+  http_set_cgi_handlers(custom_CGI_handlers, custon_CGI_handler_num);
+  //start the web server after MX_LWIP_Init() is called
+  httpd_init();
+
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END 5 */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM2 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM2) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
