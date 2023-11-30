@@ -20,7 +20,6 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "lwip.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lwip/apps/httpd.h"
@@ -98,6 +97,7 @@ void setPWM(enum led led, int value){
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim12;
@@ -116,6 +116,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
+static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM12_Init(void);
 void StartDefaultTask(void const * argument);
@@ -131,6 +132,7 @@ const char* custom_SSI_tags[custom_SSI_tag_num] = {"lred", "lgreen", "lblue", "b
 
 uint16_t custom_SSI_handler(const char* ssi_tag_name, char *pcInsert, int iInsertLen)
 {
+
   if ( iInsertLen < 10 ) {
       // if the buffer size is smaller than the longest response then indicate an error
       return(-1);
@@ -193,9 +195,6 @@ const char * setRED(int iIndex, int iNumParams, char *pcParam[], char *pcValue[]
 	  if (iNumParams==1) {
 	        setPWM(redLed, atoi(pcValue[0]));
 		}
-	  else{
-		  setPWM(redLed,3);
-	  }
     return("/index.shtml");
 }
 
@@ -204,8 +203,6 @@ const char * setGRN(int iIndex, int iNumParams, char *pcParam[], char *pcValue[]
 
     if (iNumParams==1) {
         setPWM(greenLed, atoi(pcValue[0]));
-	}else{
-		setPWM(greenLed, 3);
 	}
 
     return("/index.shtml");
@@ -216,7 +213,7 @@ const char * setBLU(int iIndex, int iNumParams, char *pcParam[], char *pcValue[]
     if (iNumParams==1) {
         if (atoi(pcValue[0])==1) {
             HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
-            setPWM(redLed, 6);
+
         } else {
             HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
         }
@@ -291,6 +288,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
+  MX_ADC1_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -330,8 +328,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-//	  setPWM(redLed, 3);
-//	  setPWM(greenLed, 3);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -384,6 +381,58 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
 }
 
 /**
@@ -641,6 +690,8 @@ void StartDefaultTask(void const * argument)
   MX_TIM12_Init();
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_1);
+  setPWM(greenLed, 3);
+  setPWM(redLed, 3);
   /* USER CODE BEGIN 5 */
   //set up the web server
   http_set_ssi_handler(custom_SSI_handler, custom_SSI_tags, custom_SSI_tag_num);
