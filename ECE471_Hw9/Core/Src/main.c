@@ -20,6 +20,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "lwip.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lwip/apps/httpd.h"
@@ -35,7 +36,7 @@ enum led {
 
 static enum led redLed = red;
 static enum led greenLed = green;
-
+static uint32_t temp =0;
 static int max = 65535;
 
 void setPWM(enum led led, int value);
@@ -127,52 +128,31 @@ void StartDefaultTask(void const * argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define custom_SSI_tag_num 4
-const char* custom_SSI_tags[custom_SSI_tag_num] = {"lred", "lgreen", "lblue", "buser"};
+#define custom_SSI_tag_num 1
+const char* custom_SSI_tags[custom_SSI_tag_num] = {"ltemp"};
 
 uint16_t custom_SSI_handler(const char* ssi_tag_name, char *pcInsert, int iInsertLen)
 {
-
   if ( iInsertLen < 10 ) {
       // if the buffer size is smaller than the longest response then indicate an error
       return(-1);
   }
 
   if (strcmp(ssi_tag_name, custom_SSI_tags[0])==0) {
-      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14)) {
-          strcpy(pcInsert, "1");
-      } else {
-          strcpy(pcInsert, "0");
-      }
+	  char buffer[6];
+
+
+
+          strcpy(pcInsert,itoa(temp, buffer,10));
+
       return(strlen(pcInsert));
-  } else if (strcmp(ssi_tag_name, custom_SSI_tags[1])==0) {
-      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0)) {
-          strcpy(pcInsert, "1");
-      } else {
-          strcpy(pcInsert, "0");
-      }
-      return(strlen(pcInsert));
-  } else if (strcmp(ssi_tag_name, custom_SSI_tags[2])==0) {
-      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7)) {
-          strcpy(pcInsert, "1");
-      } else {
-          strcpy(pcInsert, "0");
-      }
-      return(strlen(pcInsert));
-  } else if (strcmp(ssi_tag_name, custom_SSI_tags[3])==0) {
-      if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)) {
-          strcpy(pcInsert, "pressed");
-      } else {
-          strcpy(pcInsert, "released");
-      }
-      return(strlen(pcInsert));
-  } else {
+  }
+else {
       // otherwise, return unrecognized tag error
     return(-1);
   }
 
 }
-
 
 
 /*
@@ -289,7 +269,8 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_ADC1_Init();
-
+  MX_TIM3_Init();
+  MX_TIM12_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -686,13 +667,20 @@ void StartDefaultTask(void const * argument)
 {
   /* init code for LWIP */
   MX_LWIP_Init();
-  MX_TIM3_Init();
-  MX_TIM12_Init();
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_1);
-  setPWM(greenLed, 3);
-  setPWM(redLed, 3);
   /* USER CODE BEGIN 5 */
+
+   MX_TIM3_Init();
+   MX_TIM12_Init();
+   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+   HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_1);
+   HAL_ADC_Start(&hadc1);
+   HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+
+   uint32_t raw_temp = HAL_ADC_GetValue(&hadc1);
+   uint32_t cht_voltage = (raw_temp * 3300U) / 4095U;
+  	  temp = 25 + (cht_voltage * 10 - 7600U) / 25;
+   setPWM(greenLed, 3);
+   setPWM(redLed, 3);
   //set up the web server
   http_set_ssi_handler(custom_SSI_handler, custom_SSI_tags, custom_SSI_tag_num);
   http_set_cgi_handlers(custom_CGI_handlers, custon_CGI_handler_num);
